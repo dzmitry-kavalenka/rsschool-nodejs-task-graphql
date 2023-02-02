@@ -12,7 +12,12 @@ import {
 } from 'graphql';
 import DB from '../utils/DB/DB';
 import { ChangeUserDTO, CreateUserDTO } from '../utils/DB/entities/DBUsers';
-import { CreateProfileDTO, ChangeProfileDTO } from '../utils/DB/entities/DBProfiles';
+import {
+  CreateProfileDTO,
+  ChangeProfileDTO,
+} from '../utils/DB/entities/DBProfiles';
+import { CreatePostDTO, ChangePostDTO } from '../utils/DB/entities/DBPosts';
+import { ChangeMemberTypeDTO } from '../utils/DB/entities/DBMemberTypes';
 
 const userType = new GraphQLObjectType({
   name: 'UserType',
@@ -60,6 +65,42 @@ const profileInputType = new GraphQLInputObjectType({
     city: { type: GraphQLString },
     memberTypeId: { type: GraphQLString },
     userId: { type: GraphQLString },
+  },
+});
+
+const postType = new GraphQLObjectType({
+  name: 'PostType',
+  fields: () => ({
+    id: { type: GraphQLID },
+    title: { type: GraphQLString },
+    content: { type: GraphQLString },
+    userId: { type: GraphQLString },
+  }),
+});
+
+const postInputType = new GraphQLInputObjectType({
+  name: 'PostInput',
+  fields: {
+    title: { type: GraphQLString },
+    content: { type: GraphQLString },
+    userId: { type: GraphQLString },
+  },
+});
+
+const memberTypeType = new GraphQLObjectType({
+  name: 'MemberTypeType',
+  fields: () => ({
+    id: { type: GraphQLID },
+    discount: { type: GraphQLFloat },
+    monthPostsLimit: { type: GraphQLFloat },
+  }),
+});
+
+const memberTypeInputType = new GraphQLInputObjectType({
+  name: 'MemberTypeInput',
+  fields: {
+    discount: { type: GraphQLFloat },
+    monthPostsLimit: { type: GraphQLFloat },
   },
 });
 
@@ -126,6 +167,68 @@ const queryType = new GraphQLObjectType({
         }
 
         return profile;
+      },
+    },
+    getAllPosts: {
+      type: new GraphQLList(postType),
+      resolve: async (
+        _source: string,
+        _args: any,
+        { app: { db } }: { app: { db: DB } }
+      ) => {
+        return await db.posts.findMany();
+      },
+    },
+    getPostById: {
+      type: postType,
+      args: {
+        id: {
+          type: GraphQLID,
+        },
+      },
+      resolve: async (
+        _source: string,
+        { id }: { id: string },
+        { app: { db } }: { app: { db: DB; reply: FastifyReply } }
+      ) => {
+        const post = await db.posts.findOne({ key: 'id', equals: id });
+
+        if (!post) {
+          return new GraphQLError('post not found');
+        }
+
+        return post;
+      },
+    },
+    getAllMemberTypes: {
+      type: new GraphQLList(memberTypeType),
+      resolve: async (
+        _source: string,
+        _args: any,
+        { app: { db } }: { app: { db: DB } }
+      ) => {
+        return await db.memberTypes.findMany();
+      },
+    },
+    getMemberTypeById: {
+      type: memberTypeType,
+      args: {
+        id: {
+          type: GraphQLID,
+        },
+      },
+      resolve: async (
+        _source: string,
+        { id }: { id: string },
+        { app: { db } }: { app: { db: DB; reply: FastifyReply } }
+      ) => {
+        const memberType = await db.memberTypes.findOne({ key: 'id', equals: id });
+
+        if (!memberType) {
+          return new GraphQLError('member type not found');
+        }
+
+        return memberType;
       },
     },
   }),
@@ -318,32 +421,32 @@ const mutationType = new GraphQLObjectType({
         if (!validate(input.userId)) {
           return new GraphQLError('id must be valid uuid');
         }
-  
+
         const memberType = await db.memberTypes.findOne({
           key: 'id',
           equals: input.memberTypeId,
         });
-  
+
         if (!memberType) {
           return new GraphQLError('member type is not found');
         }
-  
+
         const user = await db.profiles.findOne({
           key: 'userId',
           equals: input.userId,
         });
-  
+
         if (user) {
           return new GraphQLError('user already has a profile');
         }
-  
+
         return await db.profiles.create(input);
       },
     },
     deleteProfile: {
       type: profileType,
       args: {
-        id: { type: GraphQLID }
+        id: { type: GraphQLID },
       },
       resolve: async (
         _source: string,
@@ -351,9 +454,9 @@ const mutationType = new GraphQLObjectType({
         { app: { db } }: { app: { db: DB } }
       ) => {
         if (!validate(id)) {
-         return new GraphQLError('id must be valid uuid');
+          return new GraphQLError('id must be valid uuid');
         }
-  
+
         return await db.profiles.delete(id);
       },
     },
@@ -365,16 +468,104 @@ const mutationType = new GraphQLObjectType({
       },
       resolve: async (
         _source: string,
-        { id, input }: { id: string, input: ChangeProfileDTO },
+        { id, input }: { id: string; input: ChangeProfileDTO },
         { app: { db } }: { app: { db: DB } }
       ) => {
         if (!validate(id)) {
           return new GraphQLError('id must be valid uuid');
         }
-  
+
         return await db.profiles.change(id, input);
       },
-    }
+    },
+    createPost: {
+      type: postType,
+      args: {
+        input: {
+          type: postInputType,
+        },
+      },
+      resolve: async (
+        _source: string,
+        { input }: { input: CreatePostDTO },
+        { app: { db } }: { app: { db: DB } }
+      ) => {
+        if (!validate(input.userId)) {
+          return new GraphQLError('id must be valid uuid');
+        }
+
+        return await db.posts.create(input);
+      },
+    },
+    deletePost: {
+      type: postType,
+      args: {
+        id: {
+          type: GraphQLID,
+        },
+      },
+      resolve: async (
+        _source: string,
+        { id }: { id: string },
+        { app: { db } }: { app: { db: DB } }
+      ) => {
+        if (!validate(id)) {
+          return new GraphQLError('id must be valid uuid');
+        }
+
+        return await db.posts.delete(id);
+      },
+    },
+    updatePost: {
+      type: postType,
+      args: {
+        id: { type: GraphQLID },
+        input: { type: postInputType },
+      },
+      resolve: async (
+        _source: string,
+        { input, id }: { id: string; input: ChangePostDTO },
+        { app: { db } }: { app: { db: DB } }
+      ) => {
+        if (!validate(id)) {
+          return new GraphQLError('id must be valid uuid');
+        }
+
+        const post = await db.posts.findOne({
+          key: 'id',
+          equals: id,
+        });
+
+        if (!post) {
+          return new GraphQLError('post not found');
+        }
+
+        return await db.posts.change(id, input);
+      },
+    },
+    updateMemberType: {
+      type: memberTypeType,
+      args: {
+        id: { type: GraphQLID },
+        input: { type: memberTypeInputType },
+      },
+      resolve: async (
+        _source: string,
+        { input, id }: { id: string; input: ChangeMemberTypeDTO },
+        { app: { db } }: { app: { db: DB } }
+      ) => {
+        const memberType = await db.memberTypes.findOne({
+          key: 'id',
+          equals: id,
+        });
+
+        if (!memberType) {
+          return new GraphQLError('member type not found');
+        }
+
+        return await db.memberTypes.change(id, input);
+      },
+    },
   }),
 });
 

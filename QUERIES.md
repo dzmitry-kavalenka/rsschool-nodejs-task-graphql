@@ -84,7 +84,7 @@
       }
     }
 
-## Profiles Module
+## Profile Module
 
 #### Get All Profiles
 
@@ -150,7 +150,7 @@
       }
     }
 
-#### Update User
+#### Update Profile
 
     mutation updateProfile($id:ID!, $input: ProfileInput!){
       updateProfile(id:$id, input: $input) {
@@ -163,5 +163,94 @@
         city
         memberTypeId
         userId
+      }
+    }
+
+## Post Module
+
+#### Get All Posts
+
+    query {
+      getAllPosts {
+        id
+        title
+        content
+        userId
+      }
+    }
+
+#### Get Post By Id
+
+    query getPostById($id: ID!) {
+      getPostById(id: $id) {
+        id
+        title
+        content
+        userId
+      }
+    }
+
+#### Create Post
+
+    mutation createPost($input: PostInput!){
+      createPost(input: $input) {
+        id
+        title
+        content
+        userId
+      }
+    }
+
+#### Delete Post By Id
+
+    mutation deletePost($id: ID!){
+      deletePost(id: $id) {
+        id
+        title
+        content
+        userId
+      }
+    }
+
+#### Update Post
+
+    mutation updatePost($id: ID!, $input: PostInput!){
+      updatePost(id: $id, input: $input) {
+        id
+        title
+        content
+        userId
+      }
+    }
+
+## Member Type Module
+
+#### Get All Member Types
+
+    query {
+      getAllMemberTypes {
+        id
+        discount
+        monthPostsLimit
+      }
+    }
+
+#### Get Member Type By Id
+
+    query getMemberTypeById($id: ID!) {
+      getPostById(id: $id) {
+        id
+        discount
+        monthPostsLimit
+      }
+    }
+
+#### Update Member Type
+
+    mutation updateMemberType($id: ID!, $input: MemberTypeInput!){
+      updateMemberType(id: $id, input: $input) {
+        id
+        discount
+        monthPostsLimit
       }
     }
