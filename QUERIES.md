@@ -238,7 +238,7 @@
 #### Get Member Type By Id
 
     query getMemberTypeById($id: ID!) {
-      getPostById(id: $id) {
+      getMemberTypeById(id: $id) {
         id
         discount
         monthPostsLimit
@@ -249,6 +249,74 @@
 
     mutation updateMemberType($id: ID!, $input: MemberTypeInput!){
       updateMemberType(id: $id, input: $input) {
+        id
+        discount
+        monthPostsLimit
+      }
+    }
+
+## 2.1. Get users, profiles, posts, memberTypes - 4 operations in one query.
+
+    query {
+      getAllUsers {
+        id
+        email
+        firstName
+        lastName
+        subscribedToUserIds
+      }
+      getAllProfiles {
+        id
+        avatar
+        sex
+        birthday
+        country
+        street
+        city
+        memberTypeId
+        userId
+      }
+      getAllPosts {
+        id
+        title
+        content
+        userId
+      }
+      getAllMemberTypes {
+        id
+        discount
+        monthPostsLimit
+      }
+    }
+
+## 2.2. Get user, profile, post, memberType by id - 4 operations in one query.
+
+    query getById($userId: ID!, $profileId: ID!, $postId: ID!, $memberTypeId: ID!) {
+      getUserById(id: $userId) {
+        id
+        email
+        firstName
+        lastName
+        subscribedToUserIds
+      }
+      getProfileById(id: $profileId) {
+        id
+        avatar
+        sex
+        birthday
+        country
+        street
+        city
+        memberTypeId
+        userId
+      }
+      getPostById(id: $postId) {
+        id
+        title
+        content
+        userId
+      }
+      getMemberTypeById(id: $memberTypeId) {
         id
         discount
         monthPostsLimit
