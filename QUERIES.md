@@ -15,7 +15,7 @@
 #### Get All Users
 
     query {
-      getAll {
+      getAllUsers {
         id
         email
         firstName
@@ -26,8 +26,8 @@
 
 #### Get User By Id
 
-    query getById($id: ID!) {
-      getById(id: $id) {
+    query getUserById($id: ID!) {
+      getUserById(id: $id) {
         id
         email
         firstName
@@ -72,7 +72,8 @@
       }
     }
 
-#### UpdateUser
+#### Update User
+
     mutation updateUser($id:ID!, $input: UserInput!){
       updateUser(id:$id, input: $input) {
         id
@@ -80,5 +81,87 @@
         lastName
         email
         subscribedToUserIds
+      }
+    }
+
+## Profiles Module
+
+#### Get All Profiles
+
+    query {
+      getAllProfiles {
+        id
+        avatar
+        sex
+        birthday
+        country
+        street
+        city
+        memberTypeId
+        userId
+      }
+    }
+
+#### Get Profile By Id
+
+    query getProfileById($id: ID!) {
+      getProfileById(id: $id) {
+        id
+        avatar
+        sex
+        birthday
+        country
+        street
+        city
+        memberTypeId
+        userId
+      }
+    }
+
+#### Create Profile
+
+    mutation createProfile($input: ProfileInput!){
+      createProfile(input: $input) {
+        id
+        avatar
+        sex
+        birthday
+        country
+        street
+        city
+        memberTypeId
+        userId
+      }
+    }
+
+#### Delete Profile By Id
+
+    mutation deleteProfile($id: ID!){
+      deleteProfile(id: $id) {
+        id
+        avatar
+        sex
+        birthday
+        country
+        street
+        city
+        memberTypeId
+        userId
+      }
+    }
+
+#### Update User
+
+    mutation updateProfile($id:ID!, $input: ProfileInput!){
+      updateProfile(id:$id, input: $input) {
+        id
+        avatar
+        sex
+        birthday
+        country
+        street
+        city
+        memberTypeId
+        userId
       }
     }

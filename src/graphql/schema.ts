@@ -8,44 +8,11 @@ import {
   GraphQLSchema,
   GraphQLString,
   GraphQLError,
+  GraphQLFloat,
 } from 'graphql';
 import DB from '../utils/DB/DB';
 import { ChangeUserDTO, CreateUserDTO } from '../utils/DB/entities/DBUsers';
-
-export const graphqlBodySchema = {
-  type: 'object',
-  properties: {
-    mutation: { type: 'string' },
-    query: { type: 'string' },
-    variables: {
-      type: 'object',
-    },
-  },
-  oneOf: [
-    {
-      type: 'object',
-      required: ['query'],
-      properties: {
-        query: { type: 'string' },
-        variables: {
-          type: 'object',
-        },
-      },
-      additionalProperties: false,
-    },
-    {
-      type: 'object',
-      required: ['mutation'],
-      properties: {
-        mutation: { type: 'string' },
-        variables: {
-          type: 'object',
-        },
-      },
-      additionalProperties: false,
-    },
-  ],
-} as const;
+import { CreateProfileDTO, ChangeProfileDTO } from '../utils/DB/entities/DBProfiles';
 
 const userType = new GraphQLObjectType({
   name: 'UserType',
@@ -67,16 +34,49 @@ const userInputType = new GraphQLInputObjectType({
   },
 });
 
+const profileType = new GraphQLObjectType({
+  name: 'ProfileType',
+  fields: () => ({
+    id: { type: GraphQLID },
+    avatar: { type: GraphQLString },
+    sex: { type: GraphQLString },
+    birthday: { type: GraphQLFloat },
+    country: { type: GraphQLString },
+    street: { type: GraphQLString },
+    city: { type: GraphQLString },
+    memberTypeId: { type: GraphQLString },
+    userId: { type: GraphQLString },
+  }),
+});
+
+const profileInputType = new GraphQLInputObjectType({
+  name: 'ProfileInput',
+  fields: {
+    avatar: { type: GraphQLString },
+    sex: { type: GraphQLString },
+    birthday: { type: GraphQLFloat },
+    country: { type: GraphQLString },
+    street: { type: GraphQLString },
+    city: { type: GraphQLString },
+    memberTypeId: { type: GraphQLString },
+    userId: { type: GraphQLString },
+  },
+});
+
 const queryType = new GraphQLObjectType({
   name: 'rootQuery',
   fields: () => ({
-    getAll: {
+    getAllUsers: {
       type: new GraphQLList(userType),
-      resolve: async (_source: any, _args: any, fastify: any) => {
-        return await fastify.app.db.users.findMany();
+      resolve: async (
+        _source: string,
+        _args: any,
+        { app: { db } }: { app: { db: DB } }
+      ) => {
+        return await db.users.findMany();
       },
     },
-    getById: {
+    getUserById: {
       type: userType,
       args: {
         id: {
@@ -88,17 +88,44 @@ const queryType = new GraphQLObjectType({
         { id }: { id: string },
         { app: { db } }: { app: { db: DB; reply: FastifyReply } }
       ) => {
-        const user = await db.users
-          .findOne({ key: 'id', equals: id })
-          .then((user) => {
-            if (!user) {
-              return new GraphQLError('user not found');
-            }
+        const user = await db.users.findOne({ key: 'id', equals: id });
 
-            return user;
-          });
+        if (!user) {
+          return new GraphQLError('user not found');
+        }
 
         return user;
+      },
+    },
+    getAllProfiles: {
+      type: new GraphQLList(profileType),
+      resolve: async (
+        _source: string,
+        _args: unknown,
+        { app: { db } }: { app: { db: DB } }
+      ) => {
+        return await db.profiles.findMany();
+      },
+    },
+    getProfileById: {
+      type: profileType,
+      args: {
+        id: {
+          type: GraphQLID,
+        },
+      },
+      resolve: async (
+        _source: string,
+        { id }: { id: string },
+        { app: { db } }: { app: { db: DB; reply: FastifyReply } }
+      ) => {
+        const profile = await db.profiles.findOne({ key: 'id', equals: id });
+
+        if (!profile) {
+          return new GraphQLError('profile not found');
+        }
+
+        return profile;
       },
     },
   }),
@@ -276,6 +303,78 @@ const mutationType = new GraphQLObjectType({
         return await db.users.change(id, input);
       },
     },
+    createProfile: {
+      type: profileType,
+      args: {
+        input: {
+          type: profileInputType,
+        },
+      },
+      resolve: async (
+        _source: string,
+        { input }: { input: CreateProfileDTO },
+        { app: { db } }: { app: { db: DB } }
+      ) => {
+        if (!validate(input.userId)) {
+          return new GraphQLError('id must be valid uuid');
+        }
+  
+        const memberType = await db.memberTypes.findOne({
+          key: 'id',
+          equals: input.memberTypeId,
+        });
+  
+        if (!memberType) {
+          return new GraphQLError('member type is not found');
+        }
+  
+        const user = await db.profiles.findOne({
+          key: 'userId',
+          equals: input.userId,
+        });
+  
+        if (user) {
+          return new GraphQLError('user already has a profile');
+        }
+  
+        return await db.profiles.create(input);
+      },
+    },
+    deleteProfile: {
+      type: profileType,
+      args: {
+        id: { type: GraphQLID }
+      },
+      resolve: async (
+        _source: string,
+        { id }: { id: string },
+        { app: { db } }: { app: { db: DB } }
+      ) => {
+        if (!validate(id)) {
+         return new GraphQLError('id must be valid uuid');
+        }
+  
+        return await db.profiles.delete(id);
+      },
+    },
+    updateProfile: {
+      type: profileType,
+      args: {
+        id: { type: GraphQLID },
+        input: { type: profileInputType },
+      },
+      resolve: async (
+        _source: string,
+        { id, input }: { id: string, input: ChangeProfileDTO },
+        { app: { db } }: { app: { db: DB } }
+      ) => {
+        if (!validate(id)) {
+          return new GraphQLError('id must be valid uuid');
+        }
+  
+        return await db.profiles.change(id, input);
+      },
+    }
   }),
 });
 
