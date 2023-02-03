@@ -18,6 +18,7 @@ import {
 } from '../utils/DB/entities/DBProfiles';
 import { CreatePostDTO, ChangePostDTO } from '../utils/DB/entities/DBPosts';
 import { ChangeMemberTypeDTO } from '../utils/DB/entities/DBMemberTypes';
+import { getProfileMemberType, getUserPosts, getUserProfiles } from './helpers';
 
 const userType = new GraphQLObjectType({
   name: 'UserType',
@@ -27,6 +28,9 @@ const userType = new GraphQLObjectType({
     lastName: { type: GraphQLString },
     email: { type: GraphQLString },
     subscribedToUserIds: { type: new GraphQLList(GraphQLID) },
+    posts: { type: new GraphQLList(postType) },
+    profiles: { type: new GraphQLList(profileType) },
+    memberTypes: { type: new GraphQLList(memberTypeType) },
   }),
 });
 
@@ -114,7 +118,23 @@ const queryType = new GraphQLObjectType({
         _args: any,
         { app: { db } }: { app: { db: DB } }
       ) => {
-        return await db.users.findMany();
+        const users = await db.users.findMany();
+
+        const extendedUsers = users.map(async (user) => {
+          const posts = await getUserPosts(user.id, db);
+          const profiles = await getUserProfiles(user.id, db);
+          const memberTypes = (
+            await Promise.all(
+              profiles.map(({ memberTypeId }) =>
+                getProfileMemberType(memberTypeId, db)
+              )
+            )
+          ).filter((memberType) => memberType);
+
+          return { ...user, posts, profiles, memberTypes };
+        });
+
+        return await Promise.all(extendedUsers);
       },
     },
     getUserById: {
@@ -135,7 +155,18 @@ const queryType = new GraphQLObjectType({
           return new GraphQLError('user not found');
         }
 
-        return user;
+        const posts = await getUserPosts(user.id, db);
+        const profiles = await getUserProfiles(user.id, db);
+
+        const memberTypes = (
+          await Promise.all(
+            profiles.map(({ memberTypeId }) =>
+              getProfileMemberType(memberTypeId, db)
+            )
+          )
+        ).filter((memberType) => memberType);
+
+        return { ...user, posts, profiles, memberTypes };
       },
     },
     getAllProfiles: {
@@ -222,7 +253,10 @@ const queryType = new GraphQLObjectType({
         { id }: { id: string },
         { app: { db } }: { app: { db: DB; reply: FastifyReply } }
       ) => {
-        const memberType = await db.memberTypes.findOne({ key: 'id', equals: id });
+        const memberType = await db.memberTypes.findOne({
+          key: 'id',
+          equals: id,
+        });
 
         if (!memberType) {
           return new GraphQLError('member type not found');

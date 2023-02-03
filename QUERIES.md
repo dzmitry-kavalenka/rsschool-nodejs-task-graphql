@@ -322,3 +322,71 @@
         monthPostsLimit
       }
     }
+
+## 2.3. Get users with their posts, profiles, memberTypes.
+
+    query {
+      getAllUsers {
+        id
+        email
+        firstName
+        lastName
+        subscribedToUserIds
+        posts {
+          id
+          title
+          content
+          userId
+        }
+        profiles {
+          id
+          avatar
+          sex
+          birthday
+          country
+          street
+          city
+          memberTypeId
+          userId
+        }
+        memberTypes {
+          id
+          discount
+          monthPostsLimit
+        }
+      }
+    }
+
+## 2.4 Get user by id with his posts, profile, memberType.
+
+    query getUserById($id: ID!) {
+      getUserById(id: $id) {
+        id
+        email
+        firstName
+        lastName
+        subscribedToUserIds
+        posts {
+          id
+          title
+          content
+          userId
+        }
+        profiles {
+          id
+          avatar
+          sex
+          birthday
+          country
+          street
+          city
+          memberTypeId
+          userId
+        }
+        memberTypes {
+          id
+          discount
+          monthPostsLimit
+        }
+      }
+    }
