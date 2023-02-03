@@ -390,3 +390,26 @@
         }
       }
     }
+
+## 2.5 Get users with their userSubscribedTo, profile.
+
+  query {
+    getAllUsers {
+      id
+      email
+      firstName
+      lastName
+      subscribedToUserIds
+      userSubscribedTo {
+        id
+        avatar
+        sex
+        birthday
+        country
+        street
+        city
+        memberTypeId
+        userId
+      }
+    }
+  }

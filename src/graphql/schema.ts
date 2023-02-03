@@ -18,7 +18,7 @@ import {
 } from '../utils/DB/entities/DBProfiles';
 import { CreatePostDTO, ChangePostDTO } from '../utils/DB/entities/DBPosts';
 import { ChangeMemberTypeDTO } from '../utils/DB/entities/DBMemberTypes';
-import { getProfileMemberType, getUserPosts, getUserProfiles } from './helpers';
+import { getProfileMemberType, getProfilesUserSubscribedOn, getUserPosts, getUserProfiles } from './helpers';
 
 const userType = new GraphQLObjectType({
   name: 'UserType',
@@ -31,6 +31,7 @@ const userType = new GraphQLObjectType({
     posts: { type: new GraphQLList(postType) },
     profiles: { type: new GraphQLList(profileType) },
     memberTypes: { type: new GraphQLList(memberTypeType) },
+    userSubscribedTo: { type: new GraphQLList(profileType) },
   }),
 });
 
@@ -130,8 +131,9 @@ const queryType = new GraphQLObjectType({
               )
             )
           ).filter((memberType) => memberType);
+          const userSubscribedTo = await getProfilesUserSubscribedOn(user.id, db);
 
-          return { ...user, posts, profiles, memberTypes };
+          return { ...user, posts, profiles, memberTypes, userSubscribedTo };
         });
 
         return await Promise.all(extendedUsers);
