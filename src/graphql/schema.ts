@@ -20,12 +20,12 @@ import { CreatePostDTO, ChangePostDTO } from '../utils/DB/entities/DBPosts';
 import { ChangeMemberTypeDTO } from '../utils/DB/entities/DBMemberTypes';
 import {
   getProfileMemberType,
-  getProfilesUserSubscribedOn,
+  getUserSubscribedOn,
   getUserPosts,
-  getUserProfiles,
+  getUserProfile,
 } from './helpers';
 
-const userType = new GraphQLObjectType({
+const userType: GraphQLObjectType = new GraphQLObjectType({
   name: 'UserType',
   fields: () => ({
     id: { type: GraphQLID },
@@ -34,10 +34,10 @@ const userType = new GraphQLObjectType({
     email: { type: GraphQLString },
     subscribedToUserIds: { type: new GraphQLList(GraphQLID) },
     posts: { type: new GraphQLList(postType) },
-    profiles: { type: new GraphQLList(profileType) },
+    profile: { type: profileType },
     memberTypes: { type: new GraphQLList(memberTypeType) },
-    userSubscribedTo: { type: new GraphQLList(profileType) },
-    subscribedToUser: { type: new GraphQLList(postType) },
+    userSubscribedTo: { type: new GraphQLList(userType) },
+    subscribedToUser: { type: new GraphQLList(userType) },
   }),
 });
 
@@ -129,20 +129,29 @@ const queryType = new GraphQLObjectType({
 
         const extendedUsers = users.map(async (user) => {
           const posts = await getUserPosts(user.id, db);
-          const profiles = await getUserProfiles(user.id, db);
-          const memberTypes = (
-            await Promise.all(
-              profiles.map(({ memberTypeId }) =>
-                getProfileMemberType(memberTypeId, db)
-              )
-            )
-          ).filter((memberType) => memberType);
-          const userSubscribedTo = await getProfilesUserSubscribedOn(
+          const profile = await getUserProfile(user.id, db);
+          const memberTypes = await getProfileMemberType(
+            db,
+            profile?.memberTypeId
+          );
+          const userSubscribedTo = await getUserSubscribedOn(
             user.id,
             db
           );
+          const [subscribedToUser] = await Promise.all(
+            user.subscribedToUserIds.map((subId) =>
+              db.users.findMany({ key: 'id', equals: subId })
+            )
+          );
 
-          return { ...user, posts, profiles, memberTypes, userSubscribedTo };
+          return {
+            ...user,
+            posts,
+            profile,
+            memberTypes,
+            userSubscribedTo,
+            subscribedToUser,
+          };
         });
 
         return await Promise.all(extendedUsers);
@@ -167,19 +176,19 @@ const queryType = new GraphQLObjectType({
         }
 
         const posts = await getUserPosts(user.id, db);
-        const profiles = await getUserProfiles(user.id, db);
+        const profile = await getUserProfile(user.id, db);
+        const memberTypes = await getProfileMemberType(
+          db,
+          profile?.memberTypeId
+        );
 
-        const memberTypes = (
-          await Promise.all(
-            profiles.map(({ memberTypeId }) =>
-              getProfileMemberType(memberTypeId, db)
-            )
+        const [subscribedToUser] = await Promise.all(
+          user.subscribedToUserIds.map((subId) =>
+            db.users.findMany({ key: 'id', equals: subId })
           )
-        ).filter((memberType) => memberType);
+        );
 
-        const [subscribedToUser] = await Promise.all(user.subscribedToUserIds.map((subId) => getUserPosts(subId, db)))
-
-        return { ...user, posts, profiles, memberTypes, subscribedToUser };
+        return { ...user, posts, profile, memberTypes, subscribedToUser };
       },
     },
     getAllProfiles: {

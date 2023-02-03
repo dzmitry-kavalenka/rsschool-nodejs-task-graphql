@@ -402,6 +402,13 @@
       subscribedToUserIds
       userSubscribedTo {
         id
+        email
+        firstName
+        lastName
+        subscribedToUserIds
+      }
+      profile {
+        id
         avatar
         sex
         birthday
@@ -425,9 +432,42 @@
         subscribedToUserIds
         subscribedToUser {
           id
+          email
+          firstName
+          lastName
+          subscribedToUserIds
+        }
+        posts {
+          id
           title
           content
           userId
         }
       }
     }
+
+## 2.7 Get users with their userSubscribedTo, subscribedToUser
+
+  query {
+    getAllUsers {
+      id
+      email
+      firstName
+      lastName
+      subscribedToUserIds
+      userSubscribedTo {
+        id
+        email
+        firstName
+        lastName
+        subscribedToUserIds
+      }
+      subscribedToUser {
+        id
+        email
+        firstName
+        lastName
+        subscribedToUserIds
+      }
+    }
+  }
