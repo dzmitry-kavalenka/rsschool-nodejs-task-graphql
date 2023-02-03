@@ -413,3 +413,21 @@
       }
     }
   }
+
+## 2.6 Get user by id with his subscribedToUser, posts
+
+    query getById($userId: ID!) {
+      getUserById(id: $userId) {
+        id
+        email
+        firstName
+        lastName
+        subscribedToUserIds
+        subscribedToUser {
+          id
+          title
+          content
+          userId
+        }
+      }
+    }
